@@ -1,0 +1,254 @@
+openapi: 3.0.0
+info:
+  contact:
+    email: az@zok.xyz
+  description: Game Server Control API
+  license:
+    name: MIT
+  title: Game Server API
+  version: 1.0.1
+servers:
+- url: /gamecontrol/1.0.1
+paths:
+  /clusters:
+    get:
+      description: List all available clusters
+      operationId: list_all_clusters
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Cluster'
+                type: array
+                x-content-type: application/json
+          description: cluster listing
+        "403":
+          description: Permission denied to list all clusters
+      summary: list all available clusters
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+  /clusters/{clusterName}:
+    patch:
+      description: Update the specified cluster
+      operationId: update_server_cluster
+      parameters:
+      - explode: false
+        in: path
+        name: clusterName
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "202":
+          description: Update initiated
+        "403":
+          description: permission denied
+        "423":
+          description: update not possible, servers still running
+        "501":
+          description: Update game server not implemented
+      summary: install all available patches to the server cluster
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+  /servers:
+    get:
+      description: List all available game servers
+      operationId: list_all_servers
+      parameters:
+      - description: cluster name filter
+        explode: true
+        in: query
+        name: cluster
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Server'
+                type: array
+                x-content-type: application/json
+          description: server listing
+      summary: list all servers
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+  /servers/{instanceName}:
+    get:
+      operationId: get_server_info
+      parameters:
+      - description: the requested server instance name
+        explode: false
+        in: path
+        name: instanceName
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Server'
+          description: server info
+        "404":
+          description: invalid instance name
+      summary: get info of specific server
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+    post:
+      operationId: change_server_state
+      parameters:
+      - description: the requested server instance name
+        explode: false
+        in: path
+        name: instanceName
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: What should be done with the server (start/stop)
+        explode: true
+        in: query
+        name: action
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Server'
+          description: action executed
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Server'
+          description: action initiated
+        "400":
+          description: invalid action
+        "403":
+          description: permission denied
+        "404":
+          description: invalid instance name
+        "423":
+          description: action cannot be performed
+      summary: execute action on this server
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+components:
+  schemas:
+    Game:
+      example:
+        updateByDockerPull: true
+        updateWebHook: updateWebHook
+        name: name
+      properties:
+        name:
+          type: string
+        updateByDockerPull:
+          type: boolean
+        updateWebHook:
+          type: string
+      required:
+      - name
+      type: object
+    Cluster:
+      example:
+        game:
+          updateByDockerPull: true
+          updateWebHook: updateWebHook
+          name: name
+        name: zokscluster1
+      properties:
+        name:
+          example: zokscluster1
+          type: string
+        game:
+          $ref: '#/components/schemas/Game'
+      required:
+      - game
+      - name
+      type: object
+    Server:
+      example:
+        cluster:
+          game:
+            updateByDockerPull: true
+            updateWebHook: updateWebHook
+            name: name
+          name: zokscluster1
+        hostname: hostname
+        port: 0
+        name: theisland
+        title: Zok's ARKLAN II - TheIsland
+        humanName: TheIsland
+        status:
+          players:
+          - name: name
+          - name: name
+          countPlayers: 6
+          state: stopped
+      properties:
+        name:
+          example: theisland
+          type: string
+        humanName:
+          example: TheIsland
+          type: string
+        cluster:
+          $ref: '#/components/schemas/Cluster'
+        title:
+          example: Zok's ARKLAN II - TheIsland
+          type: string
+        port:
+          type: integer
+        hostname:
+          type: string
+        status:
+          $ref: '#/components/schemas/ServerStatus'
+      required:
+      - cluster
+      - hostname
+      - humanName
+      - name
+      - port
+      - title
+      type: object
+    ServerStatus:
+      example:
+        players:
+        - name: name
+        - name: name
+        countPlayers: 6
+        state: stopped
+      properties:
+        state:
+          enum:
+          - stopped
+          - starting
+          - running
+          - stopping
+          example: stopped
+          type: string
+        countPlayers:
+          type: integer
+        players:
+          items:
+            $ref: '#/components/schemas/Player'
+          type: array
+      required:
+      - state
+      type: object
+    Player:
+      example:
+        name: name
+      properties:
+        name:
+          type: string
+      type: object

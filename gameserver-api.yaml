@@ -1,0 +1,214 @@
+openapi: 3.0.0
+info:
+  title: Game Server API
+  description: Game Server Control API
+  contact:
+    email: az@zok.xyz
+  license:
+    name: MIT
+  version: 1.0.1
+servers:
+- url: /gamecontrol/1.0.1
+paths:
+  /clusters:
+    get:
+      summary: list all available clusters
+      description: List all available clusters
+      operationId: list_all_clusters
+      responses:
+        "200":
+          description: cluster listing
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cluster'
+                x-content-type: application/json
+        "403":
+          description: Permission denied to list all clusters
+  /clusters/{clusterName}:
+    patch:
+      summary: install all available patches to the server cluster
+      description: Update the specified cluster
+      operationId: update_server_cluster
+      parameters:
+      - name: clusterName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "202":
+          description: Update initiated
+        "403":
+          description: permission denied
+        "423":
+          description: update not possible, servers still running
+        "501":
+          description: Update game server not implemented
+  /servers:
+    get:
+      summary: list all servers
+      description: List all available game servers
+      operationId: list_all_servers
+      parameters:
+      - name: cluster
+        in: query
+        description: cluster name filter
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: server listing
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Server'
+                x-content-type: application/json
+  /servers/{instanceName}:
+    get:
+      summary: get info of specific server
+      operationId: get_server_info
+      parameters:
+      - name: instanceName
+        in: path
+        description: the requested server instance name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: server info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Server'
+        "404":
+          description: invalid instance name
+    post:
+      summary: execute action on this server
+      operationId: change_server_state
+      parameters:
+      - name: instanceName
+        in: path
+        description: the requested server instance name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: action
+        in: query
+        description: What should be done with the server (start/stop)
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: action executed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Server'
+        "202":
+          description: action initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Server'
+        "400":
+          description: invalid action
+        "403":
+          description: permission denied
+        "404":
+          description: invalid instance name
+        "423":
+          description: action cannot be performed
+components:
+  schemas:
+    Game:
+      required:
+      - name
+      type: object
+      properties:
+        name:
+          type: string
+        updateByDockerPull:
+          type: boolean
+        updateWebHook:
+          type: string
+    Cluster:
+      required:
+      - game
+      - name
+      type: object
+      properties:
+        name:
+          type: string
+          example: zokscluster1
+        game:
+          $ref: '#/components/schemas/Game'
+    Server:
+      required:
+      - cluster
+      - hostname
+      - humanName
+      - name
+      - port
+      - title
+      type: object
+      properties:
+        name:
+          type: string
+          example: theisland
+        humanName:
+          type: string
+          example: TheIsland
+        cluster:
+          $ref: '#/components/schemas/Cluster'
+        title:
+          type: string
+          example: Zok's ARKLAN II - TheIsland
+        port:
+          type: integer
+        hostname:
+          type: string
+        status:
+          $ref: '#/components/schemas/ServerStatus'
+    ServerStatus:
+      required:
+      - state
+      type: object
+      properties:
+        state:
+          type: string
+          example: stopped
+          enum:
+          - stopped
+          - starting
+          - running
+          - stopping
+        countPlayers:
+          type: integer
+        players:
+          type: array
+          items:
+            $ref: '#/components/schemas/Player'
+    Player:
+      type: object
+      properties:
+        name:
+          type: string
+

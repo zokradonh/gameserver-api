@@ -1,0 +1,31 @@
+games:
+  - &ark
+    name: ARK
+    updateByDockerPull: false
+    updateWebHook: http://dockerproxy:1234/containers/start?name=ark_updater
+  - &avorion
+    name: Avorion 
+    updateByDockerPull: true
+  - &eco
+    name: ECO 
+    updateByDockerPull: true
+
+clusters:
+  - &zok
+    name: zok 
+    game: *ark
+  - &zokpriv
+    name: zokpriv
+    game: *ark
+  
+servers:
+  - name: theisland
+    humanName: TheIsland
+    hostname: example.com
+    port: 27076
+    cluster: *zok
+  - name: thecenter
+    humanName: TheCenter
+    hostname: example.com
+    port: 27078
+    cluster: *zokpriv
